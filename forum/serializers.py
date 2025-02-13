@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Forum, ForumMember
+from .models import Forum, ForumMember, Message
 import requests
 
 class SimpleMemberSerializer(serializers.ModelSerializer):
@@ -69,3 +69,11 @@ class ForumDetailSerializer(serializers.ModelSerializer):
 
     def get_active_members_count(self, obj):
         return obj.forummember_set.filter(status='active').count()
+
+class MessageSerializer(serializers.ModelSerializer):
+    author_username = serializers.CharField(source='author.username', read_only=True)
+    
+    class Meta:
+        model = Message
+        fields = ['id', 'content', 'author_username', 'author', 'created_at', 'updated_at', 'is_edited']
+        read_only_fields = ['author', 'created_at', 'updated_at', 'is_edited']
