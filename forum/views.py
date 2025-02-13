@@ -6,14 +6,15 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 import requests
 
-from .models import Forum, ForumMember
+from .models import Forum, ForumMember, Message
 from .serializers import (
     ForumSerializer, 
     ForumDetailSerializer, 
     ForumMemberSerializer,
-    SimpleMemberSerializer
+    SimpleMemberSerializer,
+    MessageSerializer
 )
-from .permissions import IsForumOwner
+from .permissions import IsForumOwner, IsForumActiveMember, IsMessageAuthor
 from .authentication import MicroserviceTokenAuthentication
 
 class ForumListCreateView(generics.ListCreateAPIView):
@@ -23,7 +24,15 @@ class ForumListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        forum = serializer.save(created_by=self.request.user)
+        
+        # Ajouter automatiquement le créateur comme membre modérateur
+        ForumMember.objects.create(
+            user=self.request.user,
+            forum=forum,
+            role='moderator',
+            status='active'
+        )
 
 class ForumRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Forum.objects.all()
@@ -96,3 +105,39 @@ class ForumMemberViewSet(generics.GenericAPIView):
         member.status = 'inactive'
         member.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class MessageListCreateView(generics.ListCreateAPIView):
+    serializer_class = MessageSerializer
+    authentication_classes = [MicroserviceTokenAuthentication]
+    permission_classes = [IsAuthenticated, IsForumActiveMember]
+    
+    def get_forum(self):
+        return get_object_or_404(Forum, pk=self.kwargs['forum_pk'])
+    
+    def get_queryset(self):
+        forum = self.get_forum()
+        return Message.objects.filter(forum=forum)
+    
+    def perform_create(self, serializer):
+        forum = self.get_forum()
+        serializer.save(author=self.request.user, forum=forum)
+
+class MessageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = MessageSerializer
+    authentication_classes = [MicroserviceTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get_forum(self):
+        return get_object_or_404(Forum, pk=self.kwargs['forum_pk'])
+    
+    def get_queryset(self):
+        forum = self.get_forum()
+        return Message.objects.filter(forum=forum)
+    
+    def perform_update(self, serializer):
+        serializer.save(is_edited=True)
+        
+    def get_permissions(self):
+        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            return [IsAuthenticated(), IsMessageAuthor()]
+        return [IsAuthenticated(), IsForumActiveMember()]
