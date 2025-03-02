@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 import requests
 
 from .models import Forum, ForumMember, Message
@@ -55,7 +56,7 @@ class ForumMemberView(generics.CreateAPIView):
     def perform_create(self, serializer):
         forum = self.get_forum()
         email = serializer.validated_data.pop('email')
-        
+        base_url = settings.URL_B
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -63,7 +64,7 @@ class ForumMemberView(generics.CreateAPIView):
             headers = {'Authorization': auth_header}
             
             response = requests.get(
-                'https://rajapi-cop-auth-api-33be22136f5e.herokuapp.com/auth/profile/',
+                base_url,
                 params={'email': email},
                 headers=headers
             )
