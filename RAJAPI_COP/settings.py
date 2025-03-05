@@ -29,8 +29,11 @@ SECRET_KEY = 'django-insecure-pow0!lf5o*xxq)u!&f--smgs$#)k&r#y$$us^9e$nlj6!&@n1p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['forum-rajapi.onrender.com']
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://forum-rajapi.onrender.com",
+]
 
 # Application definition
 
@@ -48,7 +51,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
