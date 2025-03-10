@@ -68,8 +68,13 @@ class ForumMemberView(generics.CreateAPIView):
                 params={'email': email},
                 headers=headers
             )
-            user_data = response.json()
+            if response.status_code != 200:
+                raise serializers.ValidationError({
+                    "code": "USER_NOT_FOUND",
+                    "detail": "L'utilisateur n'existe pas."
+                })
             
+            user_data = response.json()
             user = User.objects.create(
                 username=user_data['username'],
                 email=user_data['email'],
@@ -78,7 +83,10 @@ class ForumMemberView(generics.CreateAPIView):
             )
         
         if ForumMember.objects.filter(user=user, forum=forum).exists():
-            raise serializers.ValidationError("L'utilisateur est déjà membre de ce forum")
+            raise serializers.ValidationError({
+                "code": "USER_ALREADY_MEMBER",
+                "detail": "L'utilisateur est déjà membre de ce forum."
+            })
         
         serializer.save(forum=forum, user=user)
 
