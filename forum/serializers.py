@@ -32,7 +32,7 @@ class ForumMemberSerializer(serializers.ModelSerializer):
         headers = {'Authorization': auth_header}
         try:
             response = requests.get(
-                f'https://rajapi-cop-auth-api-33be22136f5e.herokuapp.com/auth/profile/',
+                f'https://rajapi-cop-auth-api.onrender.com/auth/profile/',
                 params={'email': value},
                 headers=headers
             )
