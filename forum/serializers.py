@@ -57,18 +57,20 @@ class ForumSerializer(serializers.ModelSerializer):
 class ForumDetailSerializer(serializers.ModelSerializer):
     members = serializers.SerializerMethodField()
     active_members_count = serializers.SerializerMethodField()
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
     
     class Meta:
         model = Forum
         fields = ['id', 'title', 'description', 'category', 'status', 
-                 'created_at', 'updated_at', 'members', 'active_members_count']
+                 'created_at', 'updated_at', 'members', 'active_members_count', 'created_by_username']
 
     def get_members(self, obj):
-        members = obj.forummember_set.select_related('user').filter(status='active')
-        return SimpleMemberSerializer(members, many=True).data
+        members = obj.members.all()  # Utilise la relation ManyToMany
+        forum_members = ForumMember.objects.filter(forum=obj, user__in=members, status='active')
+        return SimpleMemberSerializer(forum_members, many=True).data
 
     def get_active_members_count(self, obj):
-        return obj.forummember_set.filter(status='active').count()
+        return obj.members.count()  # Ou ForumMember.objects.filter(forum=obj, status='active').count()
 
 class MessageSerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source='author.username', read_only=True)
